@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Laptop Stock Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;color:#1a1a1a;background:#f2f2f7;min-height:100vh}
+.app{max-width:1200px;margin:0 auto;padding:1rem}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;gap:8px;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.logo{width:38px;height:38px;background:#1F3864;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.topbar h1{font-size:18px;font-weight:700}
+.tabs{display:flex;gap:3px;background:#e0e0e5;padding:3px;border-radius:10px}
+.tab{padding:8px 20px;border:none;background:transparent;border-radius:8px;cursor:pointer;font-size:13px;color:#555;font-weight:500}
+.tab.active{background:#fff;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1.2rem}
+@media(min-width:600px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.stat-val{font-size:22px;font-weight:700;line-height:1.2}
+.stat-val.green{color:#2d7a2d}
+.controls{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.controls input,.controls select{padding:10px 12px;border:1px solid #ddd;border-radius:10px;background:#fff;font-size:14px;appearance:none;flex:1;min-width:130px}
+.add-btn{padding:13px 28px;background:#1F3864;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(31,56,100,.25);transition:all .15s}
+.add-btn:hover{background:#274b82;box-shadow:0 4px 12px rgba(31,56,100,.35)}
+.add-btn:active{transform:scale(.97)}
+.btn{padding:6px 14px;border:1px solid #ddd;border-radius:9px;background:#fff;color:#1a1a1a;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:#1F3864;color:#fff;border-color:#1F3864}
+.btn.danger{color:#c0392b;border-color:#f5c6c6}
+.btn.sm{padding:5px 12px;font-size:12px;border-radius:8px}
+.btn.ghost{background:transparent;border:none;color:#888}
+.confirm-box{display:none;align-items:center;gap:6px;padding:7px 10px;background:#fff5f5;border-radius:9px;border:1px solid #f5c6c6;margin-top:6px;flex-wrap:wrap}
+.confirm-box span{font-size:12px;color:#c0392b;flex:1;min-width:100px}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge.available{background:#e6f4e6;color:#2d7a2d}
+.badge.sold{background:#e8e8e8;color:#555}
+.badge.reserved{background:#fff3e0;color:#b56a00}
+.badge.defective{background:#fde8e8;color:#c0392b}
+.table-wrap{overflow-x:auto;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);background:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:680px}
+th{background:#1F3864;color:#fff;padding:11px 12px;text-align:left;font-weight:500;font-size:12px;white-space:nowrap}
+th:first-child{border-radius:14px 0 0 0}th:last-child{border-radius:0 14px 0 0}
+td{padding:9px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:nth-child(even) td{background:#fafafa}
+.thumb{width:56px;height:40px;border-radius:7px;object-fit:cover;border:1px solid #eee;background:#f5f5f5;cursor:pointer}
+.thumb-ph{width:56px;height:40px;border-radius:7px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;color:#bbb}
+.mobile-cards{display:none}
+@media(max-width:640px){.table-wrap{display:none}.mobile-cards{display:flex;flex-direction:column;gap:10px}}
+.laptop-card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.09)}
+.lc-top{display:flex;gap:12px;margin-bottom:10px}
+.lc-img{width:88px;height:66px;border-radius:10px;object-fit:cover;border:1px solid #eee;flex-shrink:0;background:#f5f5f5;cursor:pointer}
+.lc-img-ph{width:88px;height:66px;border-radius:10px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#bbb}
+.lc-info{flex:1;min-width:0}
+.lc-brand{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.lc-model{font-weight:700;font-size:14px;line-height:1.3;margin-bottom:6px}
+.lc-price{font-size:17px;font-weight:700;color:#1F3864}
+.lc-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.meta-pill{background:#f2f2f7;border-radius:6px;padding:3px 8px;font-size:11px;color:#555}
+.lc-actions{display:flex;gap:8px;border-top:1px solid #f0f0f0;padding-top:10px}
+.lc-actions .btn{flex:1;text-align:center}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center}
+@media(min-width:640px){.modal-overlay{align-items:center}}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:1.5rem;width:100%;max-width:520px;max-height:92vh;overflow-y:auto}
+@media(min-width:640px){.modal{border-radius:16px;margin:1rem}}
+.modal-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 1.2rem}
+@media(min-width:640px){.modal-handle{display:none}}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:1.2rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:12px;color:#666;font-weight:500}
+.form-group input,.form-group select{padding:11px 12px;border:1px solid #e0e0e0;border-radius:10px;background:#fff;font-size:15px;appearance:none;width:100%}
+.form-group select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#1F3864;box-shadow:0 0 0 3px rgba(31,56,100,.08)}
+
+/* Photo upload */
+.photo-box{border:2px dashed #ddd;border-radius:12px;padding:1rem;text-align:center;cursor:pointer;background:#fafafa;transition:all .15s;position:relative;min-height:120px;display:flex;align-items:center;justify-content:center}
+.photo-box:hover{border-color:#1F3864;background:#f0f4fa}
+.photo-box.has-img{padding:0;border-style:solid;overflow:hidden}
+.photo-preview{width:100%;max-height:180px;object-fit:contain;border-radius:10px;display:block}
+.photo-placeholder{display:flex;flex-direction:column;align-items:center;gap:6px;color:#888;font-size:13px}
+.photo-remove{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+#photo-input{display:none}
+
+.modal-actions{display:flex;gap:8px;margin-top:1.4rem}
+.modal-actions .btn{flex:1;padding:13px;font-size:15px;border-radius:12px}
+.dash-grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:600px){.dash-grid{grid-template-columns:1fr 1fr}}
+.card{background:#fff;border-radius:14px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card-title{font-size:13px;font-weight:600;margin-bottom:1rem;color:#333}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bar-label{font-size:12px;color:#666;width:120px;flex-shrink:0;text-align:right}
+.bar-track{flex:1;height:14px;background:#f0f0f0;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:#1F3864;border-radius:4px}
+.bar-count{font-size:12px;font-weight:600;min-width:18px}
+.empty{text-align:center;padding:2rem;color:#aaa;font-size:13px}
+.price-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+
+/* Image lightbox */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center;padding:1rem}
+.lightbox.open{display:flex}
+.lightbox img{max-width:100%;max-height:90vh;border-radius:8px}
+.lightbox-close{position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;font-size:20px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </div>
+    <h1>Laptop Stock Manager</h1>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('stock')">Stock</button>
+    <button class="tab" onclick="showTab('dashboard')">Dashboard</button>
+  </div>
+</div>
+
+<div id="tab-stock">
+  <div id="stats-row" class="stats"></div>
+  <div class="controls">
+    <input type="search" id="search" placeholder="Search brand or model..." oninput="render()">
+    <select id="filter-brand" onchange="render()"><option value="">All brands</option></select>
+    <select id="filter-status" onchange="render()">
+      <option value="">All status</option>
+      <option>Available</option><option>Sold</option><option>Reserved</option><option>Defective</option>
+    </select>
+    <button class="add-btn" onclick="openAdd()">+ Add product</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Photo</th><th>Brand</th><th>Model</th><th>RAM</th><th>Storage</th><th>Price (MAD)</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="mobile-cards" id="mobile-cards"></div>
+  <div id="empty-msg" class="empty" style="display:none">No products found.</div>
+</div>
+
+<div id="tab-dashboard" style="display:none">
+  <div id="dash-stats" class="stats" style="margin-bottom:1.2rem"></div>
+  <div class="dash-grid">
+    <div class="card"><div class="card-title">Units by brand</div><div id="brand-chart"></div></div>
+    <div class="card">
+      <div class="card-title">Status breakdown</div>
+      <div id="status-chart"></div>
+      <div style="border-top:1px solid #f0f0f0;padding-top:12px;margin-top:12px">
+        <div class="card-title">Price range</div>
+        <div class="price-grid" id="price-stats"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="modal-title">Add product</h2>
+
+    <div class="form-group full" style="margin-bottom:12px">
+      <label>Photo (optional)</label>
+      <div class="photo-box" id="photo-box" onclick="document.getElementById('photo-input').click()">
+        <div class="photo-placeholder" id="photo-placeholder">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <span>Tap to add photo</span>
+        </div>
+        <img id="photo-preview" class="photo-preview" style="display:none" alt="">
+        <button type="button" class="photo-remove" id="photo-remove" style="display:none" onclick="event.stopPropagation();removePhoto()">×</button>
+      </div>
+      <input type="file" id="photo-input" accept="image/*" onchange="handlePhoto(event)">
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Brand</label>
+        <select id="f-brand"><option value="">Select brand...</option></select>
+      </div>
+      <div class="form-group full">
+        <label>Model / Description</label>
+        <input type="text" id="f-model" placeholder="e.g. ThinkPad T14 Gen 6 Ultra 5">
+      </div>
+      <div class="form-group">
+        <label>RAM</label>
+        <select id="f-ram">
+          <option value="">— Not specified —</option>
+          <option value="8">8 GB</option>
+          <option value="12">12 GB</option>
+          <option value="16">16 GB</option>
+          <option value="24">24 GB</option>
+          <option value="32">32 GB</option>
+          <option value="48">48 GB</option>
+          <option value="64">64 GB</option>
+          <option value="96">96 GB</option>
+          <option value="128">128 GB</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Storage</label>
+        <select id="f-storage">
+          <option value="">— Not specified —</option>
+          <option value="128">128 GB</option>
+          <option value="256">256 GB</option>
+          <option value="512">512 GB</option>
+          <option value="1000">1 TB</option>
+          <option value="2000">2 TB</option>
+          <option value="4000">4 TB</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Price (MAD)</label>
+        <input type="number" id="f-price" placeholder="5000" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f-status">
+          <option>Available</option><option>Sold</option><option>Reserved</option><option>Defective</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Notes</label>
+        <input type="text" id="f-notes" placeholder="Optional notes...">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveProduct()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">×</button>
+  <img id="lightbox-img" alt="">
+</div>
+
+</div>
+<script>
+const BRANDS=[
+"Apple MacBook","Dell","HP","Lenovo ThinkPad","Lenovo IdeaPad","Lenovo Yoga","Lenovo Legion","Microsoft Surface",
+"Asus","Asus ROG","Asus TUF","Asus ZenBook","Asus VivoBook","Acer","Acer Nitro","Acer Predator","Acer Aspire","Acer Swift",
+"Samsung","LG","Huawei","Honor","Xiaomi","Realme",
+"MSI","MSI Stealth","MSI Katana","ROG","Alienware","HP Omen","HP Victus","Razer","Gigabyte Aorus","Gigabyte",
+"Fujitsu","Panasonic Toughbook","Toshiba Dynabook","Vaio","Lavie","Medion","Chuwi","Teclast","Jumper","Infinix","Other"
+];
+
+const DEFAULT_STOCK=[
+  {id:1,brand:"Dell",model:"Premium Ultra 7 OLED 32GB 512GB Tactile",ram:32,storage:512,price:6500,status:"Available",notes:"",photo:""},
+  {id:2,brand:"Dell",model:"Pro Plus Ultra 5 16GB 512GB Tactile",ram:16,storage:512,price:6500,status:"Available",notes:"",photo:""},
+  {id:3,brand:"Dell",model:"Pro Plus",ram:"",storage:"",price:6000,status:"Available",notes:"",photo:""},
+  {id:4,brand:"Dell",model:"Precision 3480 i7 1350P",ram:"",storage:"",price:5000,status:"Available",notes:"",photo:""},
+  {id:5,brand:"Dell",model:"7450 Ultra 5 x360",ram:"",storage:"",price:6000,status:"Available",notes:"",photo:""},
+  {id:6,brand:"Dell",model:"5450 Ultra 5 Tactile 16GB 256GB",ram:16,storage:256,price:5000,status:"Available",notes:"",photo:""},
+  {id:7,brand:"Dell",model:"5450 Ultra 5 16GB 256GB",ram:16,storage:256,price:5000,status:"Available",notes:"",photo:""},
+  {id:8,brand:"Dell",model:"5520 i5 11th Gen 16GB",ram:16,storage:"",price:2500,status:"Available",notes:"",photo:""},
+  {id:9,brand:"Dell",model:"5520 i5 11th Gen 16GB",ram:16,storage:"",price:2500,status:"Available",notes:"",photo:""},
+  {id:10,brand:"HP",model:"ZBook i7 13th Gen 16GB",ram:16,storage:"",price:6000,status:"Available",notes:"",photo:""},
+  {id:11,brand:"HP",model:"DragonFly i7 12th Gen 16GB",ram:16,storage:"",price:5500,status:"Available",notes:"",photo:""},
+  {id:12,brand:"HP",model:"EliteBook Ultra 5 16GB 512GB",ram:16,storage:512,price:5800,status:"Available",notes:"",photo:""},
+  {id:13,brand:"HP",model:"Pavilion Aero R7 S8 16GB 1TB",ram:16,storage:1000,price:5800,status:"Available",notes:"",photo:""},
+  {id:14,brand:"HP",model:"Pavilion Aero R7 S8",ram:"",storage:"",price:5500,status:"Available",notes:"",photo:""},
+  {id:15,brand:"HP",model:"ProBook 460 16 inch G11",ram:"",storage:"",price:5500,status:"Available",notes:"",photo:""},
+  {id:16,brand:"Lenovo ThinkPad",model:"T14 Gen 6 Ultra 5 16GB 512GB",ram:16,storage:512,price:5000,status:"Available",notes:"",photo:""},
+  {id:17,brand:"Lenovo ThinkPad",model:"T16 i7 13th Gen",ram:"",storage:"",price:5500,status:"Available",notes:"",photo:""},
+  {id:18,brand:"Lenovo ThinkPad",model:"L14 R7 S7 16GB 512GB",ram:16,storage:512,price:5000,status:"Available",notes:"",photo:""},
+  {id:19,brand:"Lenovo ThinkPad",model:"L14 R5 S7 16GB 256GB",ram:16,storage:256,price:4500,status:"Available",notes:"",photo:""},
+  {id:20,brand:"Lenovo ThinkPad",model:"L14 R5 S7 16GB 256GB",ram:16,storage:256,price:4300,status:"Available",notes:"",photo:""},
+  {id:21,brand:"Lenovo ThinkPad",model:"E14 R S7",ram:"",storage:"",price:4500,status:"Available",notes:"",photo:""},
+  {id:22,brand:"Lenovo ThinkPad",model:"L14 i7 11th Gen",ram:"",storage:"",price:1800,status:"Available",notes:"Mkarfs",photo:""},
+  {id:23,brand:"Lenovo ThinkPad",model:"X1 Carbon i5 8th Gen",ram:"",storage:"",price:1300,status:"Available",notes:"",photo:""},
+  {id:24,brand:"Lenovo ThinkPad",model:"T14s i7 12th Gen",ram:"",storage:"",price:4000,status:"Available",notes:"",photo:""},
+  {id:25,brand:"Lenovo ThinkPad",model:"E14 i7 11th Gen",ram:"",storage:"",price:3200,status:"Available",notes:"",photo:""},
+  {id:26,brand:"Lenovo ThinkPad",model:"L13 i5 10th Gen",ram:"",storage:"",price:2200,status:"Available",notes:"",photo:""},
+  {id:27,brand:"Asus",model:"Vivobook Core 7 150U Series 1",ram:"",storage:"",price:4400,status:"Available",notes:"",photo:""},
+  {id:28,brand:"Asus",model:"Vivobook i7 13th Gen",ram:"",storage:"",price:4200,status:"Available",notes:"",photo:""},
+  {id:29,brand:"Microsoft Surface",model:"Surface Go 3",ram:"",storage:"",price:1250,status:"Available",notes:"",photo:""},
+  {id:30,brand:"Apple MacBook",model:"MacBook M3 Pro 8GB 512GB",ram:8,storage:512,price:8500,status:"Available",notes:"",photo:""},
+  {id:31,brand:"Apple MacBook",model:"MacBook Air M4 15 inch",ram:"",storage:"",price:9200,status:"Available",notes:"",photo:""},
+  {id:32,brand:"Apple MacBook",model:"MacBook Pro 2015",ram:"",storage:"",price:1850,status:"Available",notes:"",photo:""},
+  {id:33,brand:"Apple MacBook",model:"MacBook 2015",ram:"",storage:"",price:1800,status:"Available",notes:"",photo:""},
+  {id:34,brand:"Acer",model:"Nitro V15 i9 13th Gen RTX 5060",ram:"",storage:"",price:11400,status:"Available",notes:"",photo:""},
+  {id:35,brand:"MSI",model:"Stealth 14 i7 13th Gen RTX 4060",ram:"",storage:"",price:9500,status:"Available",notes:"",photo:""},
+  {id:36,brand:"MSI",model:"Katana i7 13th Gen RTX 3070",ram:"",storage:"",price:8400,status:"Available",notes:"",photo:""},
+  {id:37,brand:"ROG",model:"Strix RTX 3050",ram:"",storage:"",price:5900,status:"Available",notes:"",photo:""},
+  {id:38,brand:"Huawei",model:"MateBook Ultra 7 Tactile",ram:"",storage:"",price:7200,status:"Available",notes:"",photo:""},
+  {id:39,brand:"Fujitsu",model:"Siemens Ultra 7 155H 32GB 512GB",ram:32,storage:512,price:6500,status:"Available",notes:"",photo:""},
+  {id:40,brand:"Asus",model:"Zenbook Flip 14 i7 1350P",ram:"",storage:"",price:6200,status:"Available",notes:"",photo:""},
+  {id:41,brand:"LG",model:"Gram New R AI 5 340 16GB 512GB",ram:16,storage:512,price:5500,status:"Available",notes:"",photo:""},
+  {id:42,brand:"LG",model:"Gram i7 1350P White",ram:"",storage:"",price:5000,status:"Available",notes:"",photo:""},
+  {id:43,brand:"Samsung",model:"Galaxy Book5 Pro",ram:"",storage:"",price:5000,status:"Defective",notes:"Problem",photo:""},
+  {id:44,brand:"Lavie",model:"i7 8th Gen",ram:"",storage:"",price:2000,status:"Available",notes:"",photo:""},
+];
+
+let stock=[],nextId=45,editId=null,currentPhoto="";
+
+function load(){
+  try{
+    const s=localStorage.getItem('lsm_v5');
+    if(s){const d=JSON.parse(s);stock=d.stock;nextId=d.nextId;}
+    else{stock=JSON.parse(JSON.stringify(DEFAULT_STOCK));save();}
+  }catch(e){stock=JSON.parse(JSON.stringify(DEFAULT_STOCK));}
+  BRANDS.forEach(b=>{
+    ['filter-brand','f-brand'].forEach(id=>{
+      const o=document.createElement('option');
+      o.value=b;o.text=b;
+      document.getElementById(id).appendChild(o);
+    });
+  });
+  render();
+}
+function save(){
+  try{localStorage.setItem('lsm_v5',JSON.stringify({stock,nextId}));}
+  catch(e){alert('Storage full. Try removing some photos to free space.');}
+}
+
+// Image compression before storing
+function compressImage(file,maxWidth=800,quality=0.75){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=(e)=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        let w=img.width,h=img.height;
+        if(w>maxWidth){h=h*(maxWidth/w);w=maxWidth;}
+        canvas.width=w;canvas.height=h;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.onerror=reject;
+      img.src=e.target.result;
+    };
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handlePhoto(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  try{
+    const compressed=await compressImage(file);
+    currentPhoto=compressed;
+    showPhotoPreview(compressed);
+  }catch(err){alert('Could not load image.');}
+}
+
+function showPhotoPreview(src){
+  document.getElementById('photo-preview').src=src;
+  document.getElementById('photo-preview').style.display='block';
+  document.getElementById('photo-placeholder').style.display='none';
+  document.getElementById('photo-remove').style.display='flex';
+  document.getElementById('photo-box').classList.add('has-img');
+}
+
+function hidePhotoPreview(){
+  document.getElementById('photo-preview').style.display='none';
+  document.getElementById('photo-placeholder').style.display='flex';
+  document.getElementById('photo-remove').style.display='none';
+  document.getElementById('photo-box').classList.remove('has-img');
+}
+
+function removePhoto(){
+  currentPhoto="";
+  document.getElementById('photo-input').value="";
+  hidePhotoPreview();
+}
+
+function openLightbox(src){
+  document.getElementById('lightbox-img').src=src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
+
+function filtered(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const br=document.getElementById('filter-brand').value;
+  const st=document.getElementById('filter-status').value;
+  return stock.filter(p=>(!q||p.model.toLowerCase().includes(q)||p.brand.toLowerCase().includes(q))&&(!br||p.brand===br)&&(!st||p.status===st));
+}
+function fs(s){return s?(s>=1000?(s/1000)+' TB':s+' GB'):'—';}
+function fr(r){return r?r+' GB':'—';}
+function photoCell(p,size){
+  if(p.photo) return `<img class="${size}" src="${p.photo}" onclick="openLightbox('${p.photo.replace(/'/g,"\\'")}')">`;
+  return `<div class="${size}-ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>`;
+}
+
+function render(){
+  const f=filtered();
+  const av=stock.filter(p=>p.status==='Available');
+  const tv=av.reduce((s,p)=>s+Number(p.price),0);
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat"><div class="stat-label">Total</div><div class="stat-val">${stock.length}</div></div>
+    <div class="stat"><div class="stat-label">Available</div><div class="stat-val green">${av.length}</div></div>
+    <div class="stat"><div class="stat-label">Sold</div><div class="stat-val">${stock.filter(p=>p.status==='Sold').length}</div></div>
+    <div class="stat"><div class="stat-label">Value</div><div class="stat-val" style="font-size:14px">${tv.toLocaleString()} MAD</div></div>`;
+  document.getElementById('empty-msg').style.display=f.length?'none':'block';
+
+  document.getElementById('tbody').innerHTML=f.map((p,i)=>`
+    <tr>
+      <td style="color:#bbb;font-size:11px">${i+1}</td>
+      <td>${photoCell(p,'thumb')}</td>
+      <td style="font-weight:600">${p.brand}</td>
+      <td>${p.model}</td>
+      <td>${fr(p.ram)}</td>
+      <td>${fs(p.storage)}</td>
+      <td style="font-weight:600">${Number(p.price).toLocaleString()}</td>
+      <td><span class="badge ${p.status.toLowerCase()}">${p.status}</span></td>
+      <td style="color:#aaa;font-size:12px">${p.notes||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn sm" onclick="openEdit(${p.id})">Edit</button>
+        <button class="btn sm danger" style="margin-left:4px" onclick="toggleConfirm('td-${p.id}')">Remove</button>
+        <div id="td-${p.id}" class="confirm-box">
+          <span>Remove?</span>
+          <button class="btn sm danger" onclick="doRemove(${p.id})">Yes</button>
+          <button class="btn sm ghost" onclick="toggleConfirm('td-${p.id}')">No</button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('mobile-cards').innerHTML=f.map(p=>`
+    <div class="laptop-card">
+      <div class="lc-top">
+        ${p.photo?`<img class="lc-img" src="${p.photo}" onclick="openLightbox('${p.photo.replace(/'/g,"\\'")}')">`:`<div class="lc-img-ph"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>`}
+        <div class="lc-info">
+          <div class="lc-brand">${p.brand}</div>
+          <div class="lc-model">${p.model}</div>
+          <div class="lc-price">${Number(p.price).toLocaleString()} MAD</div>
+        </div>
+      </div>
+      <div class="lc-meta">
+        ${p.ram?`<span class="meta-pill">${p.ram} GB RAM</span>`:''}
+        ${p.storage?`<span class="meta-pill">${fs(p.storage)}</span>`:''}
+        <span class="badge ${p.status.toLowerCase()}">${p.status}</span>
+        ${p.notes?`<span class="meta-pill">${p.notes}</span>`:''}
+      </div>
+      <div id="mb-${p.id}" class="confirm-box">
+        <span>Remove this laptop?</span>
+        <button class="btn sm danger" onclick="doRemove(${p.id})">Yes, remove</button>
+        <button class="btn sm ghost" onclick="toggleConfirm('mb-${p.id}')">Cancel</button>
+      </div>
+      <div class="lc-actions">
+        <button class="btn sm" onclick="openEdit(${p.id})">Edit</button>
+        <button class="btn sm danger" onclick="toggleConfirm('mb-${p.id}')">Remove</button>
+      </div>
+    </div>`).join('');
+
+  renderDash();
+}
+
+function toggleConfirm(id){
+  const el=document.getElementById(id);
+  if(el)el.style.display=el.style.display==='flex'?'none':'flex';
+}
+function doRemove(id){stock=stock.filter(x=>x.id!==id);save();render();}
+
+function renderDash(){
+  const av=stock.filter(p=>p.status==='Available');
+  const tv=av.reduce((s,p)=>s+Number(p.price),0);
+  const pr=stock.map(p=>Number(p.price));
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="stat"><div class="stat-label">Total</div><div class="stat-val">${stock.length}</div></div>
+    <div class="stat"><div class="stat-label">Stock value</div><div class="stat-val" style="font-size:13px">${tv.toLocaleString()} MAD</div></div>
+    <div class="stat"><div class="stat-label">Avg price</div><div class="stat-val" style="font-size:13px">${pr.length?Math.round(pr.reduce((a,b)=>a+b)/pr.length).toLocaleString():0} MAD</div></div>
+    <div class="stat"><div class="stat-label">Brands</div><div class="stat-val">${[...new Set(stock.map(p=>p.brand))].length}</div></div>`;
+  const bc={};stock.forEach(p=>{bc[p.brand]=(bc[p.brand]||0)+1;});
+  const sorted=Object.entries(bc).sort((a,b)=>b[1]-a[1]);
+  const mx=sorted[0]?.[1]||1;
+  document.getElementById('brand-chart').innerHTML=sorted.map(([b,c])=>`
+    <div class="bar-row"><span class="bar-label">${b}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(c/mx*100)}%"></div></div>
+    <span class="bar-count">${c}</span></div>`).join('');
+  const sts=['Available','Sold','Reserved','Defective'];
+  const col={Available:'#2d7a2d',Sold:'#555',Reserved:'#b56a00',Defective:'#c0392b'};
+  const sc={};sts.forEach(s=>sc[s]=stock.filter(p=>p.status===s).length);
+  document.getElementById('status-chart').innerHTML=sts.map(s=>`
+    <div class="bar-row"><span class="badge ${s.toLowerCase()}" style="width:76px;text-align:center">${s}</span>
+    <div class="bar-track" style="flex:1"><div class="bar-fill" style="width:${stock.length?Math.round(sc[s]/stock.length*100):0}%;background:${col[s]}"></div></div>
+    <span class="bar-count">${sc[s]}</span></div>`).join('');
+  document.getElementById('price-stats').innerHTML=pr.length?`
+    <div class="stat"><div class="stat-label">Min</div><div class="stat-val" style="font-size:14px">${Math.min(...pr).toLocaleString()} MAD</div></div>
+    <div class="stat"><div class="stat-label">Max</div><div class="stat-val" style="font-size:14px">${Math.max(...pr).toLocaleString()} MAD</div></div>`:'';
+}
+
+function showTab(t){
+  document.getElementById('tab-stock').style.display=t==='stock'?'block':'none';
+  document.getElementById('tab-dashboard').style.display=t==='dashboard'?'block':'none';
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.textContent.toLowerCase()===t));
+}
+
+function openAdd(){
+  editId=null;currentPhoto="";
+  document.getElementById('modal-title').textContent='Add product';
+  document.getElementById('f-brand').value='';
+  document.getElementById('f-model').value='';
+  document.getElementById('f-ram').value='';
+  document.getElementById('f-storage').value='';
+  document.getElementById('f-price').value='';
+  document.getElementById('f-status').value='Available';
+  document.getElementById('f-notes').value='';
+  document.getElementById('photo-input').value='';
+  hidePhotoPreview();
+  document.getElementById('modal').classList.add('open');
+}
+function openEdit(id){
+  const p=stock.find(x=>x.id===id);if(!p)return;
+  editId=id;currentPhoto=p.photo||"";
+  document.getElementById('modal-title').textContent='Edit product';
+  document.getElementById('f-brand').value=p.brand;
+  document.getElementById('f-model').value=p.model;
+  document.getElementById('f-ram').value=p.ram||'';
+  document.getElementById('f-storage').value=p.storage||'';
+  document.getElementById('f-price').value=p.price;
+  document.getElementById('f-status').value=p.status;
+  document.getElementById('f-notes').value=p.notes||'';
+  document.getElementById('photo-input').value='';
+  if(p.photo)showPhotoPreview(p.photo);else hidePhotoPreview();
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+
+function saveProduct(){
+  const brand=document.getElementById('f-brand').value.trim();
+  const model=document.getElementById('f-model').value.trim();
+  const price=document.getElementById('f-price').value;
+  if(!brand||!model||!price){alert('Brand, model and price are required.');return;}
+  const p={id:editId||nextId++,brand,model,
+    ram:document.getElementById('f-ram').value||'',
+    storage:document.getElementById('f-storage').value||'',
+    price:Number(price),
+    status:document.getElementById('f-status').value,
+    notes:document.getElementById('f-notes').value.trim(),
+    photo:currentPhoto};
+  if(editId){const i=stock.findIndex(x=>x.id===editId);if(i>=0)stock[i]=p;}
+  else stock.push(p);
+  save();closeModal();render();
+}
+
+load();
+</script>
+</body>
+</html>
